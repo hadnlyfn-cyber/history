@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта нашей любви</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #ff6f61;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        .main-content {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 500px;
+            margin-top: 20px;
+        }
+
+        footer {
+            background-color: #ff6f61;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .btn {
+            background-color: #ff6f61;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Карта нашей любви</h1>
+</header>
+
+<div class="main-content">
+    <h2>Добро пожаловать на наш сайт!</h2>
+    <p>Здесь собраны важные места нашей истории. Нажми на карту, чтобы узнать больше о каждом из них.</p>
+    <a href="#map" class="btn">Начать путешествие</a>
+</div>
+
+<div id="map" class="map-container">
+    <!-- Здесь будет вставлена интерактивная карта -->
+    <iframe src="https://www.google.com/maps/d/u/0/embed?mid=1ZfZm-R03xM2x_vZKzPb6w3AwmK8kF7pT" width="100%" height="100%"></iframe>
+</div>
+
+<footer>
+    <p>&copy; 2026 Наш сайт</p>
+</footer>
+
+</body>
+</html>
