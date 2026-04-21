@@ -27,7 +27,7 @@
             border: 3px solid #d1b98d;
             border-radius: 10px;
             position: relative;
-            background-image: url('vintage_map_texture.jpg'); /* Можно заменить на текстуру карты */
+            background-image: url('/mnt/data/a_wide_high_resolution_vintage_fantasy_map_scene.png'); /* Подставь путь к карте */
             background-size: cover;
             background-position: center;
         }
@@ -54,10 +54,14 @@
             border-radius: 5px;
         }
 
-        .point-1 { top: 30%; left: 25%; }
-        .point-2 { top: 50%; left: 70%; }
-        .point-3 { top: 75%; left: 40%; }
+        /* Размещение точек по координатам на карте */
+        .point-1 { top: 15%; left: 20%; } /* Соответствует "Начало" */
+        .point-2 { top: 25%; left: 30%; } /* Соответствует "Встреча" */
+        .point-3 { top: 40%; left: 55%; } /* Соответствует "Приключения" */
+        .point-4 { top: 55%; left: 75%; } /* Соответствует "Испытания" */
+        .point-5 { top: 75%; left: 35%; } /* Соответствует "Будущее" */
 
+        /* Стили для кнопок перехода */
         .info-button {
             background-color: #ff6f61;
             color: white;
@@ -72,7 +76,7 @@
             transform: translateX(-50%);
         }
 
-        /* Стиль для текста на карте */
+        /* Стили для текста на карте */
         .map-text {
             position: absolute;
             top: 80%;
@@ -88,10 +92,12 @@
 
 <div class="map-container">
     <div class="map">
-        <!-- Точки на карте -->
-        <div class="point point-1" data-info="Первое свидание!" onclick="window.location.href='first_date.html'"></div>
-        <div class="point point-2" data-info="Наше путешествие!" onclick="window.location.href='trip.html'"></div>
-        <div class="point point-3" data-info="Любимое кафе!" onclick="window.location.href='favorite_cafe.html'"></div>
+        <!-- Точки на карте с данными для переходов -->
+        <div class="point point-1" data-info="Начало" onclick="window.location.href='start.html'"></div>
+        <div class="point point-2" data-info="Встреча" onclick="window.location.href='meeting.html'"></div>
+        <div class="point point-3" data-info="Приключения" onclick="window.location.href='adventures.html'"></div>
+        <div class="point point-4" data-info="Испытания" onclick="window.location.href='challenges.html'"></div>
+        <div class="point point-5" data-info="Будущее" onclick="window.location.href='future.html'"></div>
 
         <!-- Текст на карте -->
         <div class="map-text">Наши памятные места</div>
