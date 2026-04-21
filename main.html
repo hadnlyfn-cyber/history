@@ -7,9 +7,9 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f0f0f0;
             margin: 0;
             padding: 0;
+            background-color: #f0f0f0;
             color: #333;
         }
 
@@ -24,14 +24,36 @@
             margin: 0;
         }
 
-        .main-content {
-            padding: 20px;
+        .title-container {
+            position: relative;
             text-align: center;
+            color: white;
         }
 
-        .map-container {
+        .title-container img {
             width: 100%;
-            height: 500px;
+            height: 100vh;
+            object-fit: cover;
+        }
+
+        .title-container .text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            font-weight: bold;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn {
+            background-color: #ff6f61;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 5px;
             margin-top: 20px;
         }
 
@@ -44,16 +66,6 @@
             bottom: 0;
             width: 100%;
         }
-
-        .btn {
-            background-color: #ff6f61;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            border-radius: 5px;
-        }
     </style>
 </head>
 <body>
@@ -62,15 +74,15 @@
     <h1>Карта нашей любви</h1>
 </header>
 
-<div class="main-content">
-    <h2>Добро пожаловать на наш сайт!</h2>
-    <p>Здесь собраны важные места нашей истории. Нажми на карту, чтобы узнать больше о каждом из них.</p>
-    <a href="#map" class="btn">Начать путешествие</a>
+<!-- Титульная страница с фотографией -->
+<div class="title-container">
+    <img src="love.jpg" alt="Фото пары">
+    <div class="text">Начнем путешествие</div>
 </div>
 
-<div id="map" class="map-container">
-    <!-- Здесь будет вставлена интерактивная карта -->
-    <iframe src="https://www.google.com/maps/d/u/0/embed?mid=1ZfZm-R03xM2x_vZKzPb6w3AwmK8kF7pT" width="100%" height="100%"></iframe>
+<!-- Кнопка перехода -->
+<div style="text-align: center;">
+    <a href="#map" class="btn">Перейти к карте</a>
 </div>
 
 <footer>
