@@ -1,110 +1,549 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карта нашей любви</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f0f0;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Интерактивная карта — один файл</title>
+  <style>
+    /* ---- Настройки / стили ---- */
+    :root{
+      --pin-size:36px;
+      --label-bg:rgba(250,240,220,0.95);
+      --label-color:#2b1b0f;
+      --shadow:0 6px 20px rgba(0,0,0,0.45);
+      --accent:#c8832f;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#0f0f10;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding:20px;
+      color:#fff;
+    }
 
-        .map-container {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            background-color: #fff;
-            overflow: hidden;
-        }
+    .container{
+      width:100%;
+      max-width:1100px;
+      position:relative;
+      box-shadow:var(--shadow);
+      border-radius:8px;
+      overflow:hidden;
+      background:linear-gradient(#111,#0b0b0b);
+    }
 
-        .map {
-            width: 100%;
-            height: 100%;
-            background-color: #e5c79b;
-            border: 3px solid #d1b98d;
-            border-radius: 10px;
-            position: relative;
-            background-image: url('images/a_wide_high_resolution_vintage_fantasy_map_scene.png'); /* Путь к изображению в папке images */
-            background-size: cover;
-            background-position: center;
-        }
+    /*
+      ===== ВНИМАНИЕ =====
+      Чтобы получить полноценный единый файл, замените значение image.src (ниже в JS)
+      или вставьте base64 прямо сюда в атрибут src: data:image/jpeg;base64,REPLACE_BASE64
+      Пример (коротко): src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD..."
+      Если ваша картинка PNG — используйте data:image/png;base64,...
+    */
 
-        .map .point {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background-color: red;
-            border-radius: 50%;
-            cursor: pointer;
-            transform: translate(-50%, -50%);
-        }
+    .map-wrapper{
+      position:relative;
+      width:100%;
+      background:#000;
+      user-select:none;
+    }
 
-        .point:hover::after {
-            content: attr(data-info);
-            position: absolute;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 5px;
-            border-radius: 5px;
-        }
+    img.map-img{
+      display:block;
+      width:100%;
+      height:auto;
+      -webkit-user-drag:none;
+      pointer-events:none;
+      image-rendering: auto;
+    }
 
-        /* Корректировка координат точек */
-        .point-1 { top: 16%; left: 19%; } /* Начало */
-        .point-2 { top: 30%; left: 35%; } /* Встреча */
-        .point-3 { top: 50%; left: 55%; } /* Приключения */
-        .point-4 { top: 66%; left: 72%; } /* Испытания */
-        .point-5 { top: 75%; left: 36%; } /* Будущее */
+    /* SVG поверх картинки — занимает тот же размер */
+    svg.map-svg{
+      position:absolute;
+      left:0; top:0;
+      width:100%; height:100%;
+      overflow:visible;
+      pointer-events:none; /* чтобы клики шли на метки */
+    }
 
-        .info-button {
-            background-color: #ff6f61;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            text-decoration: none;
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
+    /* Метки (кнопки) */
+    .marker{
+      position:absolute;
+      transform:translate(-50%,-100%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      z-index:6;
+      pointer-events:auto;
+    }
 
-        /* Стили для текста на карте */
-        .map-text {
-            position: absolute;
-            top: 80%;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 1.5em;
-            color: #5c3d1f;
-            font-weight: bold;
-        }
-    </style>
+    .pin{
+      width:var(--pin-size);
+      height:var(--pin-size);
+      border-radius:50%;
+      background:linear-gradient(180deg,#ffd88f,#c8832f);
+      border:2px solid rgba(40,20,10,0.95);
+      box-shadow:0 6px 14px rgba(0,0,0,0.6), inset 0 -3px 8px rgba(0,0,0,0.12);
+      display:inline-block;
+      transition:transform .15s ease, box-shadow .15s ease;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+
+    .pin::after{
+      content:"";
+      position:relative;
+      display:block;
+      margin:-2px auto 0;
+      width:6px;height:8px;
+      background:rgba(40,20,10,0.95);
+      border-radius:2px;
+    }
+
+    .marker:focus .pin,
+    .marker:hover .pin{
+      transform:scale(1.08);
+      box-shadow:0 8px 22px rgba(0,0,0,0.6);
+    }
+
+    .label{
+      margin-top:4px;
+      background:var(--label-bg);
+      color:var(--label-color);
+      padding:8px 10px;
+      border-radius:6px;
+      border:1px solid rgba(100,70,40,0.25);
+      box-shadow:0 10px 20px rgba(0,0,0,0.35);
+      font-size:13px;
+      text-align:center;
+      white-space:nowrap;
+      transform-origin:50% 100%;
+      opacity:0;
+      transform:translateY(6px);
+      transition:opacity .16s ease, transform .16s ease;
+      pointer-events:none;
+      max-width:180px;
+    }
+
+    .marker:hover .label,
+    .marker:focus .label,
+    .marker[data-visible="true"] .label{
+      opacity:1;
+      transform:translateY(-6px);
+      pointer-events:auto;
+    }
+
+    /* Кнопка внутри лейбла (в модальном окне есть ссылка) */
+    .sr-only{ position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden; }
+
+    /* Стили для маршрута (svg path) */
+    .route{
+      fill:none;
+      stroke:#f5d3a4;
+      stroke-width:3.5;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      opacity:0.95;
+      filter:drop-shadow(0 8px 14px rgba(0,0,0,0.45));
+      pointer-events:auto;
+    }
+
+    /* Анимация "рисования" линии: dasharray/dashoffset */
+    .route.animate{
+      animation: draw 1s ease forwards;
+    }
+    @keyframes draw{
+      from{ stroke-dashoffset:1000; }
+      to{ stroke-dashoffset:0; }
+    }
+
+    /* Контроллы */
+    .controls{
+      display:flex;
+      gap:8px;
+      padding:12px;
+      background:linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.25));
+      align-items:center;
+      z-index:8;
+    }
+    .controls button{
+      background:linear-gradient(180deg,var(--accent),#b25e1f);
+      color:#fff;
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      box-shadow:0 6px 12px rgba(0,0,0,0.5);
+      font-size:14px;
+    }
+    .controls button.secondary{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.06);
+      color:#ddd;
+    }
+
+    /* Модальное окно */
+    .modal-backdrop{
+      position:fixed;
+      left:0; top:0; right:0; bottom:0;
+      background:rgba(0,0,0,0.6);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .15s ease;
+    }
+    .modal-backdrop.open{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .modal{
+      background:linear-gradient(180deg,#fff,#f7efe0);
+      color:#2b1b0f;
+      max-width:520px;
+      width:92%;
+      padding:18px;
+      border-radius:10px;
+      box-shadow:0 18px 60px rgba(0,0,0,0.6);
+      transform:translateY(8px);
+      transition:transform .18s ease;
+    }
+    .modal-backdrop.open .modal{ transform:none; }
+    .modal h2{ margin:0 0 8px 0; font-size:20px;}
+    .modal p{ margin:0 0 14px 0; color:#3b2b20; }
+    .modal .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+    .modal a, .modal button{
+      padding:8px 12px;
+      border-radius:8px;
+      border:none;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .modal .open-link{
+      background:linear-gradient(180deg,var(--accent),#9b4f18);
+      color:#fff;
+      text-decoration:none;
+    }
+    .modal .close-btn{
+      background:transparent;
+      border:1px solid rgba(0,0,0,0.08);
+    }
+
+    /* Удобства для маленьких экранов */
+    @media (max-width:600px){
+      :root{ --pin-size:46px; }
+      .label{ font-size:15px; padding:10px 12px; max-width:220px; }
+    }
+  </style>
 </head>
 <body>
-
-<div class="map-container">
-    <div class="map">
-        <!-- Точки на карте с данными для переходов -->
-        <div class="point point-1" data-info="Начало" onclick="window.location.href='start.html'"></div>
-        <div class="point point-2" data-info="Встреча" onclick="window.location.href='meeting.html'"></div>
-        <div class="point point-3" data-info="Приключения" onclick="window.location.href='adventures.html'"></div>
-        <div class="point point-4" data-info="Испытания" onclick="window.location.href='challenges.html'"></div>
-        <div class="point point-5" data-info="Будущее" onclick="window.location.href='future.html'"></div>
-
-        <!-- Текст на карте -->
-        <div class="map-text">Наши памятные места</div>
+  <div class="container" id="app">
+    <div class="controls" style="justify-content:space-between;">
+      <div>
+        <button id="toggleRoutesBtn">Показать маршрут</button>
+        <button id="resetRoutesBtn" class="secondary">Сбросить анимацию</button>
+      </div>
+      <div style="font-size:13px; color:#ddd; align-self:center;">Клик по метке — открыть модальное окно</div>
     </div>
-    
-    <!-- Кнопка перехода на главную страницу -->
-    <a href="index.html" class="info-button">Назад на главную</a>
-</div>
 
+    <div class="map-wrapper" id="mapWrapper" aria-label="Карта наших сокровищ">
+      <!-- Картинка (вставьте base64 вместо REPLACE_BASE64) -->
+      <img id="mapImage" class="map-img" alt="Карта наших сокровищ" src="data:image/jpeg;base64,REPLACE_BASE64">
+
+      <!-- SVG overlay для маршрута -->
+      <svg id="mapSvg" class="map-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- path-ы будут добавлены JS -->
+      </svg>
+
+      <!-- Метки: позиции заданы в процентах через style="left: x%; top: y%" -->
+      <!-- data-title / data-desc — содержимое модального окна -->
+      <button class="marker" id="m1" style="left:36%; top:30%;" data-title="1. Начало" data-desc="Всё началось здесь">
+        <span class="pin" aria-hidden="true"></span>
+        <span class="label">1. Начало<br><small>Всё началось здесь</small></span>
+      </button>
+
+      <button class="marker" id="m2" style="left:60%; top:26%;" data-title="2. Встреча" data-desc="Тот самый день">
+        <span class="pin" aria-hidden="true"></span>
+        <span class="label">2. Встреча<br><small>Тот самый день</small></span>
+      </button>
+
+      <button class="marker" id="m3" style="left:44%; top:55%;" data-title="3. Приключения" data-desc="Наши яркие моменты">
+        <span class="pin" aria-hidden="true"></span>
+        <span class="label">3. Приключения<br><small>Наши яркие моменты</small></span>
+      </button>
+
+      <button class="marker" id="m4" style="left:68%; top:58%;" data-title="4. Испытания" data-desc="Мы справились">
+        <span class="pin" aria-hidden="true"></span>
+        <span class="label">4. Испытания<br><small>Мы справились</small></span>
+      </button>
+
+      <button class="marker" id="m5" style="left:50%; top:78%;" data-title="5. Будущее" data-desc="Впереди лучшее">
+        <span class="pin" aria-hidden="true"></span>
+        <span class="label">5. Будущее<br><small>Впереди лучшее</small></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Модальное окно -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document">
+      <h2 id="modalTitle">Заголовок</h2>
+      <p id="modalDesc">Описание метки</p>
+      <div class="actions">
+        <a id="modalOpenLink" class="open-link" href="#" target="_blank" rel="noopener noreferrer">Открыть внешнюю страницу</a>
+        <button id="modalCloseBtn" class="close-btn">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Логика ----
+    // 1) Подготовить маршруты между метками (последовательность order)
+    // 2) На ресайзе/загрузке пересчитать координаты маркеров и задать path d
+    // 3) Кнопка "Показать маршрут" добавляет классы animate к path-ам, при необходимости скрывает/показывает
+    // 4) Клик по метке: открываем модальное окно с data-title/data-desc и ссылкой (можно задать URL здесь)
+
+    (function(){
+      // Порядок маршрута: 1->2->3->4->5
+      const order = ['m1','m2','m3','m4','m5'];
+      const mapWrapper = document.getElementById('mapWrapper');
+      const mapSvg = document.getElementById('mapSvg');
+      const markers = order.map(id => document.getElementById(id));
+      const toggleBtn = document.getElementById('toggleRoutesBtn');
+      const resetBtn = document.getElementById('resetRoutesBtn');
+
+      // Массив элементов path (между каждой соседней парой своя path)
+      let paths = [];
+
+      // Создаём path-ы в svg
+      function createPaths(){
+        // Очистим svg
+        while(mapSvg.firstChild) mapSvg.removeChild(mapSvg.firstChild);
+        paths = [];
+        for(let i=0;i<order.length-1;i++){
+          const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+          p.setAttribute('class','route');
+          p.setAttribute('data-seg', String(i));
+          // Подготовка dasharray для анимации: большая длина, будет корректироваться позже
+          p.style.strokeDasharray = "1000";
+          p.style.strokeDashoffset = "1000";
+          mapSvg.appendChild(p);
+          paths.push(p);
+        }
+      }
+
+      createPaths();
+
+      // Вычисляем координаты центра маркера относительно контейнера (в пикселях)
+      function markerCenter(marker){
+        const rectMap = mapWrapper.getBoundingClientRect();
+        const rect = marker.getBoundingClientRect();
+        // центр метки по горизонтали и вертикали
+        const cx = rect.left + rect.width/2 - rectMap.left;
+        const cy = rect.top + rect.height*0.45 - rectMap.top; // немного выше конца штыря
+        return {x:cx, y:cy};
+      }
+
+      // Пересчитать path d для всех сегментов
+      function updatePaths(){
+        if(paths.length === 0) return;
+        const rectMap = mapWrapper.getBoundingClientRect();
+        // Установим атрибуты SVG для корректного позиционирования
+        // Используем viewBox равный размерам контейнера, чтобы координаты path соответствовали пикселям
+        mapSvg.setAttribute('viewBox', `0 0 ${rectMap.width} ${rectMap.height}`);
+
+        for(let i=0;i<paths.length;i++){
+          const a = markers[i];
+          const b = markers[i+1];
+          const A = markerCenter(a);
+          const B = markerCenter(b);
+
+          // Сглаженная кривая: используем к��адратичную кривую (Q) для плавности
+          const midX = (A.x + B.x)/2;
+          const midY = (A.y + B.y)/2 - 40; // небольшой подъём для дуги
+          const d = `M ${A.x.toFixed(1)} ${A.y.toFixed(1)} Q ${midX.toFixed(1)} ${midY.toFixed(1)} ${B.x.toFixed(1)} ${B.y.toFixed(1)}`;
+          paths[i].setAttribute('d', d);
+
+          // Настроим strokeDasharray равный длине пути
+          try{
+            const len = paths[i].getTotalLength();
+            paths[i].style.strokeDasharray = len;
+            paths[i].style.strokeDashoffset = len;
+          }catch(e){
+            // в некоторых браузерах getTotalLength требует, чтобы path был в документе и имел d — мы уже это делаем
+          }
+        }
+      }
+
+      // Показать анимацию маршрута (последовательно)
+      async function animateRouteSequential(){
+        // Сначала убираем класс animate и сбрасываем dashoffset у всех
+        for(const p of paths){
+          const len = p.getTotalLength ? p.getTotalLength() : 1000;
+          p.style.transition = 'none';
+          p.style.strokeDashoffset = len;
+          // force reflow
+          void p.getBoundingClientRect();
+        }
+        // Небольшая пауза
+        await new Promise(r => setTimeout(r,50));
+
+        // Анимируем каждый path по очереди
+        for(const p of paths){
+          const len = p.getTotalLength();
+          p.style.transition = 'stroke-dashoffset .9s ease';
+          p.style.strokeDashoffset = 0;
+          // ждём окончания анимации
+          await new Promise(r => setTimeout(r,950));
+        }
+      }
+
+      // Тоггл видимости / проигрывания маршрута
+      let routesVisible = false;
+      toggleBtn.addEventListener('click', async () => {
+        routesVisible = !routesVisible;
+        if(routesVisible){
+          toggleBtn.textContent = 'Скрыть маршрут';
+          // делаем пути видимыми (они уже в svg) и запускаем анимацию
+          // можно показа��ь их с небольшой задержкой
+          animateRouteSequential();
+        }else{
+          toggleBtn.textContent = 'Показать маршрут';
+          // сбросим dashoffset чтобы они стали скрытыми (как невидимые)
+          for(const p of paths){
+            const len = p.getTotalLength();
+            p.style.transition = 'none';
+            p.style.strokeDashoffset = len;
+          }
+        }
+      });
+
+      resetBtn.addEventListener('click', () => {
+        // сбросим и заново пересчитаем
+        updatePaths();
+        for(const p of paths){
+          const len = p.getTotalLength();
+          p.style.transition = 'none';
+          p.style.strokeDashoffset = len;
+        }
+      });
+
+      // ---- Модальное окно ----
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalDesc = document.getElementById('modalDesc');
+      const modalOpenLink = document.getElementById('modalOpenLink');
+      const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+      // Для примера — зададим URLы для каждой метки (можете заменить на свои)
+      const urls = {
+        'm1': 'https://example.com/page1',
+        'm2': 'https://example.com/page2',
+        'm3': 'https://example.com/page3',
+        'm4': 'https://example.com/page4',
+        'm5': 'https://example.com/page5'
+      };
+
+      function openModalFor(marker){
+        const title = marker.dataset.title || 'Метка';
+        const desc = marker.dataset.desc || '';
+        modalTitle.textContent = title;
+        modalDesc.textContent = desc;
+        const id = marker.id;
+        modalOpenLink.href = urls[id] || '#';
+        // показать
+        modalBackdrop.classList.add('open');
+        modalBackdrop.setAttribute('aria-hidden','false');
+        // focus first button
+        modalCloseBtn.focus();
+      }
+
+      function closeModal(){
+        modalBackdrop.classList.remove('open');
+        modalBackdrop.setAttribute('aria-hidden','true');
+      }
+
+      modalCloseBtn.addEventListener('click', closeModal);
+      modalBackdrop.addEventListener('click', (e) => {
+        if(e.target === modalBackdrop) closeModal();
+      });
+      document.addEventListener('keydown', (e) => {
+        if(e.key === 'Escape') closeModal();
+      });
+
+      // Клики по маркерам: показываем подпись (на мобильных) и открываем модалку
+      markers.forEach(marker => {
+        // для touch: первый тап — показать подпись, второй — открыть модал
+        let tapped = false;
+        marker.addEventListener('touchend', (ev) => {
+          if(tapped){
+            // второй тап — открываем модал (и даём браузеру норм поведение)
+            openModalFor(marker);
+            tapped = false;
+            marker.removeAttribute('data-visible');
+            return;
+          }
+          ev.preventDefault();
+          marker.setAttribute('data-visible','true');
+          tapped = true;
+          setTimeout(() => { marker.removeAttribute('data-visible'); tapped=false; }, 2500);
+        }, {passive:false});
+
+        // для мыши/клавиатуры: клик открывает модал
+        marker.addEventListener('click', (ev) => {
+          openModalFor(marker);
+        });
+
+        // Enter/Space — кнопки автоматически поддерживают, но добавим key handler
+        marker.addEventListener('keydown', (ev) => {
+          if(ev.key === 'Enter' || ev.key === ' '){
+            ev.preventDefault();
+            openModalFor(marker);
+          }
+        });
+      });
+
+      // При загрузке картинки подождать, затем рассчитать пути
+      function onLoadedThen(fn){
+        const img = document.getElementById('mapImage');
+        if(img.complete && img.naturalWidth !== 0){
+          fn();
+        }else{
+          img.addEventListener('load', fn, {once:true});
+          img.addEventListener('error', () => {
+            console.warn('Не удалось загрузить картинку. Проверьте base64 в src.');
+          }, {once:true});
+        }
+      }
+
+      // Запуск
+      onLoadedThen(() => {
+        updatePaths();
+        // Если хочешь сразу показать маршрут, раскомментируй:
+        // toggleBtn.click();
+      });
+
+      // Пересчёт при ресайзе и при изменении наблюдаемых размеров контейнера
+      let resizeTimeout = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          updatePaths();
+        }, 80);
+      });
+
+      // Кроме того, наблюдаем за изменениями размеров контейнера (лучше для гибких макетов)
+      if('ResizeObserver' in window){
+        const ro = new ResizeObserver(() => { updatePaths(); });
+        ro.observe(mapWrapper);
+      }
+    })();
+  </script>
 </body>
 </html>
